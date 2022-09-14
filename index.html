@@ -1,0 +1,45 @@
+<!doctype html>
+<html lang="fr">
+    <head>
+        <meta charset="utf-8">
+        <title>Visualisation de données</title>
+        <link rel="stylesheet" type="text/css" href="style.css">
+        <script src="https://d3js.org/d3.v7.min.js"></script>
+    </head>
+    <body>
+
+        <div>
+            <p>
+                Data : 
+                <input id="dataEntry" class="TxtEntry rerecharge" type="text" placeholder="https://romsson.github.io/visualisation-interactive/datasets/iris.csv" value="https://romsson.github.io/visualisation-interactive/datasets/iris.csv"></input>
+                Time parse : <input id="timeParseEntry" class="TxtEntry rerecharge" type="text" placeholder="%b %Y" value="%b %Y"></input>
+            </p>
+            <p>Largeur :<input id="widthEntry" class="NbEntry recharge" type="text" placeholder="600" value="600"></input> px</p>
+            <p>Hauteur :<input id="heightEntry" class="NbEntry recharge" type="text" placeholder="400" value="400"></input> px</p>
+            <p>
+                Margin (G/D/H/B) : 
+                <input id="marginGEntry" class="NbEntry recharge" type="text" placeholder="40" value="40"></input>
+                <input id="marginDEntry" class="NbEntry recharge" type="text" placeholder="150" value="150"></input>
+                <input id="marginHEntry" class="NbEntry recharge" type="text" placeholder="20" value="20"></input>
+                <input id="marginBEntry" class="NbEntry recharge" type="text" placeholder="30" value="30"></input>
+            </p>
+        </div>
+
+        <div>
+            <div id="parametreDataDependant"></div>
+
+            <p>
+                Sélection du type de graph : 
+                <select id="select_g" class="recharge">
+                    <option value="1">Line Chart</option>
+                    <option value="2">Scatter Plot</option>
+                    <option value="3">Bar Chart</option>
+                </select>
+            </p>
+            
+            <svg id="plot" width="600" height="400"></svg>
+        </div>
+
+        <script src="test.js"></script>
+    </body>
+</html>
