@@ -3,6 +3,7 @@
 select_data_from = function(select){var s = document.getElementById(select); return s.options[s.selectedIndex].text}
 getDataEntryFrom = function(select){return document.getElementById(select).value}
 getChecked = function(select){return document.getElementById(select).checked}
+parseTime = d3.timeParse("%b %Y")
 
 function load_data(link){
   data = d3.csv(link, d => {
@@ -12,10 +13,15 @@ function load_data(link){
       }else{
         is_time = false
         try{
-          d[subD] = parseTime(d[subD]);
-          is_time = true;
+          testTime = parseTime(d[subD]);
+          if(testTime != null){
+            is_time = true;
+          }          
         }catch{
           is_time = false;
+        }
+        if(is_time){
+          d[subD] = parseTime(d[subD]);
         }
       }
     }
@@ -25,7 +31,7 @@ function load_data(link){
 }
 
 function supChangeOption(){
-  console.log(getDataEntryFrom("timeParseEntry"));
+  parseTime = d3.timeParse(getDataEntryFrom("timeParseEntry"));
   data = load_data(getDataEntryFrom("dataEntry"));
   construct_interface();
   changeOption();
@@ -81,28 +87,12 @@ function construct_interface(){
 
 function construct_graph(){
   data.then(function(data){
-    console.log(data);
-
 
     x_cat = select_data_from("select_x");
     x_is_time = select_data_from("select_xt");
     y_cat = select_data_from("select_y");
     c_cat = select_data_from("select_c");
-    
-    categories = Array.from(new Set(data.map(d => d[c_cat])))
-  
-    data_agg = Array.from(d3.rollup(data, v => d3.mean(v, v => v[y_cat]), v => v[c_cat]))
-                .map(d => {var rep = {}; rep[c_cat] = d[0]; rep[y_cat] = d[1];
-                    return rep;  
-                });
-  
-    data_agg_temp = x_is_time == "Oui" ? Array.from(d3.rollup(data, v => d3.mean(v, v => v[y_cat]), v => v[x_cat].getFullYear())).map(d => {var rep = {}; rep[x_cat] = d[0]; rep[y_cat] = d[1];return rep;}) : Array.from(d3.rollup(data, v => d3.mean(v, v => v[y_cat]), v => v[x_cat])).map(d => {var rep = {}; rep[x_cat] = d[0]; rep[y_cat] = d[1];return rep;});
-  
-    data_sort_by_cat = function(){var data_sort_by_cat = [];
-        for(var i = 0; i < categories.length ; i ++){
-            data_sort_by_cat[i] = data.filter(d => d[c_cat] == categories[i]);
-        } return data_sort_by_cat}();
-    
+
     if(x_is_time == "Auto"){
       try{
         data[0][x_cat].getFullYear();
@@ -111,6 +101,29 @@ function construct_graph(){
         x_is_time = "Non";
       }
     }
+
+    categories = Array.from(new Set(data.map(d => d[c_cat])))
+  
+    data_agg = Array.from(d3.rollup(data, v => d3.mean(v, v => v[y_cat]), v => v[c_cat]))
+                .map(d => {var rep = {}; rep[c_cat] = d[0]; rep[y_cat] = d[1];
+                    return rep;  
+                });
+    
+    getDataAgg = function(){
+      if(x_is_time == "Oui"){
+        return Array.from(d3.rollup(data, v => d3.mean(v, v => v[y_cat]), v => v[x_cat].getFullYear())).map(d => {var rep = {}; rep[x_cat] = d[0]; rep[y_cat] = d[1];return rep;});
+      }else{
+        return Array.from(d3.rollup(data, v => d3.mean(v, v => v[y_cat]), v => v[x_cat])).map(d => {var rep = {}; rep[x_cat] = d[0]; rep[y_cat] = d[1];return rep;});
+      }
+    }
+    data_agg_temp =  getDataAgg();
+  
+    data_sort_by_cat = function(){var data_sort_by_cat = [];
+        for(var i = 0; i < categories.length ; i ++){
+            data_sort_by_cat[i] = data.filter(d => d[c_cat] == categories[i]);
+        } return data_sort_by_cat}();
+    
+    
     var parametres = {margin : ({top: parseInt(getDataEntryFrom("marginHEntry")), right: parseInt(getDataEntryFrom("marginDEntry")), bottom: parseInt(getDataEntryFrom("marginBEntry")), left: parseInt(getDataEntryFrom("marginGEntry"))}),
                       width: parseInt(getDataEntryFrom("widthEntry")),
                       height: parseInt(getDataEntryFrom("heightEntry")),
