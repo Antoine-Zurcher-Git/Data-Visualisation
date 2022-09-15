@@ -7,3 +7,20 @@
 .NbEntry{
     width: 40px;
 }
+
+.column {
+    float: left;
+    width: 50%;
+}
+
+.ContenantPrincipal:after{
+    content: "";
+    display: table;
+    clear: both;
+}
+
+/* @media screen and (max-width: 1200px) {
+    .column {
+        width: 100%;
+    }
+} */

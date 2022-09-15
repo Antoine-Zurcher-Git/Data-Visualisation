@@ -1,5 +1,30 @@
 //run serveur : python -m http.server 8080
 
+// Finition de la construction du HTML/CSS
+var mediaQuery = window.matchMedia('(max-width: 1200px)');
+
+function modificationTaille(e) {
+  // Check if the media query is true
+  if (e.matches) {
+    columns = document.getElementsByClassName("column");
+    for(col in columns){
+      if (columns.hasOwnProperty(col)) {
+        columns[col].style.width = "100%";
+      }
+    }
+  }else{
+    columns = document.getElementsByClassName("column");
+    for(col in columns){
+      if (columns.hasOwnProperty(col)) {
+        columns[col].style.width = "50%";
+      }
+    }
+  }
+}
+mediaQuery.addListener(modificationTaille)
+modificationTaille(mediaQuery)
+
+
 select_data_from = function(select){var s = document.getElementById(select); return s.options[s.selectedIndex].text}
 getDataEntryFrom = function(select){return document.getElementById(select).value}
 getChecked = function(select){return document.getElementById(select).checked}
@@ -123,6 +148,10 @@ function construct_graph(){
             data_sort_by_cat[i] = data.filter(d => d[c_cat] == categories[i]);
         } return data_sort_by_cat}();
     
+    
+    document.getElementById("plot").style.width = getDataEntryFrom("widthEntry");
+    var mediaQuery = window.matchMedia('(max-width: '+(parseInt(getDataEntryFrom("widthEntry"))*2).toString()+'px)');
+    modificationTaille(mediaQuery);
     
     var parametres = {margin : ({top: parseInt(getDataEntryFrom("marginHEntry")), right: parseInt(getDataEntryFrom("marginDEntry")), bottom: parseInt(getDataEntryFrom("marginBEntry")), left: parseInt(getDataEntryFrom("marginGEntry"))}),
                       width: parseInt(getDataEntryFrom("widthEntry")),
@@ -272,6 +301,7 @@ line_chart = function(data,categories,p){
   //Création des axes
   axes = create_axes(svg,data,p);
 
+
   //Placement des points
   svg.selectAll("circle")
     .data(data)
@@ -286,16 +316,17 @@ line_chart = function(data,categories,p){
   const line = d3.line()
     .x(d => axes.x(d[p.x_cat]))
     .y(d => axes.y(d[p.y_cat]))
-  var data_sort_by_cat = []
+  var data_sort_by_cat = [[],[]]
   for(var i = 0; i < categories.length ; i ++){
-    data_sort_by_cat[i] = data.filter(d => d[p.color_cat] == categories[i]);
+    data_sort_by_cat[i+2] = data.filter(d => d[p.color_cat] == categories[i]);
   }
+  console.log(data_sort_by_cat)
   svg.selectAll("path")
     .data(data_sort_by_cat)
     .enter()
     .append("path")
-    .attr("d", line)
-    .attr("stroke", d => {return axes.c(d[0][p.color_cat]);})
+    .attr("d", d => {return line(d);})
+    .attr("stroke", (d,i) => {return axes.c(d[i][p.color_cat]);})
     .attr("fill", "none")
 
   //Legende
