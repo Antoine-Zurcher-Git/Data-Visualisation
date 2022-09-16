@@ -110,7 +110,7 @@ function construct_interface(){
   });
 }
 
-function construct_graph(){
+function construct_graph(scale={minX:null,maxX:null,minY:null,maxY:null}){
   data.then(function(data){
 
     x_cat = select_data_from("select_x");
@@ -163,7 +163,8 @@ function construct_graph(){
                       show_zero_x:getChecked("zero_x"),
                       show_zero_y:getChecked("zero_y"),
                       x_is_time:(x_is_time == "Oui"),
-                      plot_type:select_data_from("select_g")
+                      plot_type:select_data_from("select_g"),
+                      scale:scale
     };
 
     plot = null
@@ -194,33 +195,41 @@ function construct_graph(){
 }
 
 function create_axes(svg,data,p){
-  var minX = 0;
-  if (p.show_zero_x == false){
-    minX = d3.min(data, d => {return d[p.x_cat];});
+  if(p.scale.minX == null){
+    p.scale.minX = 0;
+    if (p.show_zero_x == false){
+      p.scale.minX = d3.min(data, d => {return d[p.x_cat];});
+    }
   }
-  var maxX = d3.max(data, d => {return d[p.x_cat];});
-  if (p.show_zero_x){
-    maxX = Math.max(0,maxX);
+  if(p.scale.maxX == null){
+    p.scale.maxX = d3.max(data, d => {return d[p.x_cat];});
+    if (p.show_zero_x){
+      p.scale.maxX = Math.max(0,p.scale.maxX);
+    }
   }
-  var minY = 0;
-  if (p.show_zero_y == false){
-    minY = d3.min(data, d => {return d[p.y_cat];});
+  if(p.scale.minY == null){
+    p.scale.minY = 0;
+    if (p.show_zero_y == false){
+      p.scale.minY = d3.min(data, d => {return d[p.y_cat];});
+    }
   }
-  var maxY = d3.max(data, d => {return d[p.y_cat];});
-  if (p.show_zero_y){
-    maxY = Math.max(0,maxY);
+  if(p.scale.maxY == null){
+    p.scale.maxY = d3.max(data, d => {return d[p.y_cat];});
+    if (p.show_zero_y){
+      p.scale.maxY = Math.max(0,p.scale.maxY);
+    }
   }
   define_x = function(){
     if(p.plot_type == "Bar Chart"){
       return d3.scaleBand().domain(d3.range(data.length)).range([p.margin.left, p.width - p.margin.right]);
     }else{
-      return p.x_is_time ? d3.scaleTime().domain([minX,maxX]).range([p.margin.left,p.width-p.margin.right]) : d3.scaleLinear().domain([minX,maxX]).range([p.margin.left,p.width-p.margin.right])
+      return p.x_is_time ? d3.scaleTime().domain([p.scale.minX,p.scale.maxX]).range([p.margin.left,p.width-p.margin.right]) : d3.scaleLinear().domain([p.scale.minX,p.scale.maxX]).range([p.margin.left,p.width-p.margin.right])
     }
   };
   const x = define_x();
 
   const y = d3.scaleLinear()
-    .domain([minY,maxY])
+    .domain([p.scale.minY,p.scale.maxY])
     .range([p.height-p.margin.bottom,p.margin.top]);
 
   var colorRange = d3.schemeCategory10;
@@ -244,7 +253,7 @@ function create_axes(svg,data,p){
     .attr("y", p.height - p.margin.bottom + 5)
     .text(p.x_cat.replace("_"," "))
 
-  return {x:x,y:y,c:c};
+  return {x:x,y:y,c:c,minX:p.scale.minX,maxX:p.scale.maxX,xAxis:xAxis,yAxis:yAxis};
 }
 
 function create_legend(svg,c,p){
@@ -279,18 +288,51 @@ scatter_plot = function(data,p){
     // Création des axes
     axes = create_axes(svg,data,p)
 
-    svg.selectAll("circle")
+    // Add brushing
+    // var brush = d3.brush()                 // Add the brush feature using the d3.brush function
+    //   .extent( [ [p.margin.left,p.margin.top], [p.width-p.margin.right,p.height-p.margin.bottom] ] ) // initialise the brush area: start at 0,0 and finishes at width,height: it means I select the whole graph area
+    //   .on("end", e=>{updateChart(e)}) // Each time the brush selection changes, trigger the 'updateChart' function
+
+    var scatter = svg.append('g')
+      .attr("clip-path", "url(#clip)")
+    
+    scatter.selectAll("circle")
       .data(data)
       .enter() // permet d'avoir un sous ensemble de ces placeholders
       .append("circle")
-      .attr("cx", d => { return axes.x(d[p.x_cat]);})
-      .attr("cy", d => { return axes.y(d[p.y_cat]);})
+      .attr("cx", d => { if(axes.x(d[p.x_cat]) >= p.margin.left && axes.x(d[p.x_cat]) <= p.width-p.margin.right){return axes.x(d[p.x_cat]);} else {return -10}})
+      .attr("cy", d => { if(axes.y(d[p.y_cat]) >= p.margin.top && axes.y(d[p.y_cat]) <= p.height-p.margin.bottom){return axes.y(d[p.y_cat]);}else {return -10}})
       .attr("r",Math.min(p.width,p.height)/200)
       .attr("fill", d => { return axes.c(d[p.c_cat]);})
-  
+      
+    // scatter
+    //   .append("g")
+    //   .attr("class", "brush")
+    //   .call(brush);
+
     //Legende
     create_legend(svg,axes.c,p);
+
+    // function xG_to_xL(xG){
+    //   return (p.scale.maxX-p.scale.minX)*(xG-p.margin.left)/(p.width-p.margin.right-p.margin.left)+p.scale.minX;
+    // }
+    // function yG_to_yL(yG){
+    //   return (p.scale.maxY-p.scale.minY)*(yG-(p.height-p.margin.bottom))/(p.margin.top-(p.height-p.margin.bottom))+p.scale.minY;
+    // }
     
+    // function invertSelection(sel){
+    //   xmi = sel[0][0];
+    //   ymi = sel[0][1];
+    //   xma = sel[1][0];
+    //   yma = sel[1][1]; 
+    //   return [[ xG_to_xL(xmi),yG_to_yL(ymi)],[ xG_to_xL(xma),yG_to_yL(yma)]];
+    // }
+
+    // function updateChart(event) {
+    //   newSelection = invertSelection(event.selection);
+    //   construct_graph(scale={minX:newSelection[0][0],maxX:newSelection[1][0],minY:newSelection[1][1],maxY:newSelection[0][1]});
+    // }
+
     return svg.node();
 }
 
